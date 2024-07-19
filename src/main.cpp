@@ -23,12 +23,11 @@ float Cang, Lang, CangF, LangF;
 
 
 void ReadAnalogVal(void){
-  int test;
-  test = analogRead(CArco);
   CangleX = analogRead(CArco);
-  test = analogRead(CRota);
+  CangleX = analogRead(CArco);
   LangleX = analogRead(CRota);
-  test = analogRead(Techo);
+  LangleX = analogRead(CRota);
+  TangleX = analogRead(Techo);
   TangleX = analogRead(Techo);
 }
 
@@ -60,48 +59,44 @@ void loop() {
 
   Cang = map(CangleX, 0, 1023, -90, 90); // Map the analog value to degrees
   Lang = map(LangleX, 0, 1023, -90, 90); // Map the analog value to degrees
-  Tang = map(TangleX, 0, 1023, 0, 180); // Map the analog value to degrees
+  Tang = map(TangleX, 0, 1023, 0, 180);  // Map the analog value to degrees
 
   // Low-pass filter
   CangF = 0.95 * CangF + 0.05 * Cang;
   LangF = 0.95 * LangF + 0.05 * Lang;
 
-
-
-
   if (pasos == 40){
     u8x8.setCursor(0,3);             // Column, Row
-    u8x8.print("    C     L     ");
+    u8x8.print(" C     L     T  ");
     u8x8.setCursor(0,4);             // Column, Row
     u8x8.print("                ");
     if (CangF >= 0) {
-      u8x8.setCursor(3,4);             // Column, Row
+      u8x8.setCursor(0,4);             // Column, Row
       u8x8.print("+");
-      u8x8.setCursor(4,4);             // Column, Row
+      u8x8.setCursor(1,4);             // Column, Row
       u8x8.print(CangF, 0);
     } else {
-      u8x8.setCursor(3,4);             // Column, Row
+      u8x8.setCursor(0,4);             // Column, Row
       u8x8.print(CangF, 0);
     }
     if (LangF >= 0) {
-      u8x8.setCursor(9,4);             // Column, Row
+      u8x8.setCursor(6,4);             // Column, Row
       u8x8.print("+");
-      u8x8.setCursor(10,4);             // Column, Row
+      u8x8.setCursor(7,4);             // Column, Row
       u8x8.print(LangF, 0);
     } else {
-      u8x8.setCursor(9,4);             // Column, Row
+      u8x8.setCursor(6,4);             // Column, Row
       u8x8.print(LangF, 0);
     }
     if (Tang >= 0) {
-      u8x8.setCursor(6,5);             // Column, Row
+      u8x8.setCursor(12,4);             // Column, Row
       u8x8.print("+");
-      u8x8.setCursor(7,5);             // Column, Row
+      u8x8.setCursor(13,4);             // Column, Row
       u8x8.print(Tang);
     } else {
-      u8x8.setCursor(6,5);             // Column, Row
+      u8x8.setCursor(12,4);             // Column, Row
       u8x8.print(Tang);
     }
-
     if (CangF >= 0) Serial.print("  "); else Serial.print(" "); Serial.print(CangF, 0); if (abs(CangF) < 10) Serial.print(" "); Serial.print(",");
     if (LangF >= 0) Serial.print("  "); else Serial.print(" "); Serial.print(LangF, 0); if (abs(LangF) < 10) Serial.print(" "); 
     Serial.print(", 0000, 0000, XXX, XXX,"); 
@@ -130,6 +125,7 @@ void serialEvent() {
     }
   }
 }
+
 int ReadEEPROM(int i){
   int Data;
   eeAddress = sizeof(int) * i; 
