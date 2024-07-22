@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <U8g2lib.h>
+#include "Functions.h"
 
 U8X8_SH1106_128X64_NONAME_HW_I2C u8x8(/* reset=*/ U8X8_PIN_NONE);
 
@@ -18,19 +19,8 @@ bool DataReady = false;             // whether the string is complete
 bool error = false;                 // whether the string have errors
 int eeAddress; //EEPROM address to start reading from
 
-int CangleX, LangleX, TangleX, Tang, pasos = 0;
+int CangleX, LangleX, TangleX, Tang, C0, C1023, L0, L1023, T0, T1023, pasos = 0;
 float Cang, Lang, CangF, LangF;
-
-
-void ReadAnalogVal(void){
-  CangleX = analogRead(CArco);
-  CangleX = analogRead(CArco);
-  LangleX = analogRead(CRota);
-  LangleX = analogRead(CRota);
-  TangleX = analogRead(Techo);
-  TangleX = analogRead(Techo);
-}
-
 
 
 void setup() {
@@ -51,15 +41,21 @@ void setup() {
   pinMode(CRota, INPUT);
   pinMode(SDD, INPUT);
   pinMode(Techo, INPUT);
+  C0 = ReadEEPROM(0);
+  C1023 = ReadEEPROM(1);
+  L0 = ReadEEPROM(2);
+  L1023 = ReadEEPROM(3);
+  T0 = ReadEEPROM(4);
+  T1023 = ReadEEPROM(5);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   ReadAnalogVal();
+  Analyze_Data_In();
 
-  Cang = map(CangleX, 0, 1023, -90, 90); // Map the analog value to degrees
-  Lang = map(LangleX, 0, 1023, -90, 90); // Map the analog value to degrees
-  Tang = map(TangleX, 0, 1023, 0, 180);  // Map the analog value to degrees
+  Cang = map(CangleX, C0, C1023, -90, 90); // Map the analog value to degrees
+  Lang = map(LangleX, L0, L1023, -90, 90); // Map the analog value to degrees
+  Tang = map(TangleX, T0, T1023, 0, 180);  // Map the analog value to degrees
 
   // Low-pass filter
   CangF = 0.95 * CangF + 0.05 * Cang;
@@ -97,8 +93,17 @@ void loop() {
       u8x8.setCursor(12,4);             // Column, Row
       u8x8.print(Tang);
     }
-    if (CangF >= 0) Serial.print("  "); else Serial.print(" "); Serial.print(CangF, 0); if (abs(CangF) < 10) Serial.print(" "); Serial.print(",");
-    if (LangF >= 0) Serial.print("  "); else Serial.print(" "); Serial.print(LangF, 0); if (abs(LangF) < 10) Serial.print(" "); 
+
+    if (Tang < 50) {                    // Invert the display for L position
+      // L position Lateral
+      if (CangF >= 0) Serial.print("  "); else Serial.print(" "); Serial.print(CangF, 0); if (abs(CangF) < 10) Serial.print(" "); Serial.print(",");
+      if (LangF >= 0) Serial.print("  "); else Serial.print(" "); Serial.print(LangF, 0); if (abs(LangF) < 10) Serial.print(" "); 
+    } else {
+      // L position Head
+      if (LangF >= 0) Serial.print("  "); else Serial.print(" "); Serial.print(LangF, 0); if (abs(LangF) < 10) Serial.print(" "); Serial.print(",");
+      if (CangF >= 0) Serial.print("  "); else Serial.print(" "); Serial.print(CangF, 0); if (abs(CangF) < 10) Serial.print(" ");
+    }
+
     Serial.print(", 0000, 0000, XXX, XXX,"); 
     Serial.println();
     pasos = 0;
@@ -139,3 +144,99 @@ void WriteEEPROM(int i, int Data){
   EEPROM.put(eeAddress, Data);
 }
 
+void ReadAnalogVal(void){
+  CangleX = analogRead(CArco);
+  delay(1);
+  CangleX = analogRead(CArco);
+  LangleX = analogRead(CRota);
+  delay(1);
+  LangleX = analogRead(CRota);
+  TangleX = analogRead(Techo);
+  delay(1);
+  TangleX = analogRead(Techo);
+}
+
+void Analyze_Data_In(void){
+  if (DataReady) {  // ---------------- Data Analisys Start --------------------
+    String Tipo = "";
+    String Magnitud = "";
+    Tipo = inputString.substring(0,2);
+    Magnitud = inputString.substring(2);
+
+    if (Tipo == "IN"){            // Comando de Reset de EEPROM
+        WriteEEPROM(0, 0);        // C0
+        WriteEEPROM(1, 1023);     // C1023
+        WriteEEPROM(2, 0);        // L0
+        WriteEEPROM(3, 1023);     // L1023
+        WriteEEPROM(4, 0);        // T0
+        WriteEEPROM(5, 1023);     // T1023
+      goto jmp;
+    }
+
+    if (Tipo == "C+"){            // Comando de calibracion de "C" en +90°
+      if (Magnitud.toInt() == 90){
+        C0 = CangleX;
+        WriteEEPROM(0, C0);
+      } else error = true;
+      goto jmp;
+    }
+
+    if (Tipo == "C-"){          // Comando de calibracion de "C" en -90°
+      if (Magnitud.toInt() == 90){
+        C1023 = CangleX;
+        WriteEEPROM(1, C1023);
+      } else error = true;
+      goto jmp;
+    }
+
+    if (Tipo == "L+"){          // Comando de calibracion de "L" en +90°
+      if (Magnitud.toInt() == 90){
+        L0 = LangleX;
+        WriteEEPROM(2, L0);
+      } else error = true;
+      goto jmp;
+    }
+
+    if (Tipo == "L-"){            // Comando de calibracion de "L" en -90°
+      if (Magnitud.toInt() == 90){
+        L1023 = LangleX;
+        WriteEEPROM(3, L1023);
+      } else error = true;
+      goto jmp;
+    } 
+
+    if (Tipo == "T+"){            // Comando de calibracion de "T" en 0°
+      if (Magnitud.toInt() == 0){
+        T0 = TangleX;
+        WriteEEPROM(4, T0);
+      } else error = true;
+      goto jmp;
+    }
+
+    if (Tipo == "T-"){            // Comando de calibracion de "T" en 180°
+      if (Magnitud.toInt() == 180){
+        T1023 = TangleX;
+        WriteEEPROM(5, T1023);
+      } else error = true;
+      goto jmp;
+    }
+
+    // End of Data Analisys -------------------
+
+    error = true;      // Si el comando de entrada es desconocido setear error
+    jmp:
+
+    // error = CheckGenPW();
+
+    if (error) {
+      Serial.println(NACK);
+    } else {
+      Serial.println(ACK);
+    }
+    error = false;
+    // clear the string:
+    inputString = "";
+    DataReady = false;
+
+  } // -------------------------------- Data Analisys End --------------------
+}
