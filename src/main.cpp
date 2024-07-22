@@ -205,7 +205,7 @@ void Analyze_Data_In(void){
       goto jmp;
     } 
 
-    if (Tipo == "T+"){            // Comando de calibracion de "T" en 0°
+    if (Tipo == "T="){            // Comando de calibracion de "T" en 0°
       if (Magnitud.toInt() == 0){
         T0 = TangleX;
         WriteEEPROM(4, T0);
@@ -213,7 +213,7 @@ void Analyze_Data_In(void){
       goto jmp;
     }
 
-    if (Tipo == "T-"){            // Comando de calibracion de "T" en 180°
+    if (Tipo == "T="){            // Comando de calibracion de "T" en 180°
       if (Magnitud.toInt() == 180){
         T1023 = TangleX;
         WriteEEPROM(5, T1023);
