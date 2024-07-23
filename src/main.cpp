@@ -53,9 +53,9 @@ void loop() {
   ReadAnalogVal();
   Analyze_Data_In();
 
-  Cang = map(CangleX, C0, C1023, -90, 90); // Map the analog value to degrees
-  Lang = map(LangleX, L0, L1023, -90, 90); // Map the analog value to degrees
-  Tang = map(TangleX, T0, T1023, 0, 180);  // Map the analog value to degrees
+  Cang = map(CangleX, C0, C1023, 90, -90);   // Map the analog value to degrees
+  Lang = map(LangleX, L0, L1023, 305, -200); // Map the analog value to degrees 270 -180 0 perfecto
+  Tang = map(TangleX, T0, T1023, 0, 180);    // Map the analog value to degrees
 
   // Low-pass filter
   CangF = 0.95 * CangF + 0.05 * Cang;
@@ -94,17 +94,19 @@ void loop() {
       u8x8.print(Tang);
     }
 
-    if (Tang < 50) {                    // Invert the display for L position
+    if (Tang > 110) {                    // Invert the display for L position
       // L position Lateral
       if (CangF >= 0) Serial.print("  "); else Serial.print(" "); Serial.print(CangF, 0); if (abs(CangF) < 10) Serial.print(" "); Serial.print(",");
       if (LangF >= 0) Serial.print("  "); else Serial.print(" "); Serial.print(LangF, 0); if (abs(LangF) < 10) Serial.print(" "); 
     } else {
       // L position Head
+      LangF *= -1;
       if (LangF >= 0) Serial.print("  "); else Serial.print(" "); Serial.print(LangF, 0); if (abs(LangF) < 10) Serial.print(" "); Serial.print(",");
       if (CangF >= 0) Serial.print("  "); else Serial.print(" "); Serial.print(CangF, 0); if (abs(CangF) < 10) Serial.print(" ");
     }
 
-    Serial.print(", 0000, 0000, XXX, XXX,"); 
+    Serial.print(", 0000, 0000, XXX,");
+    Serial.print(" "); Serial.print(Tang); if (abs(Tang) < 10) Serial.print(" "); Serial.print(",");
     Serial.println();
     pasos = 0;
   } else pasos += 1;
